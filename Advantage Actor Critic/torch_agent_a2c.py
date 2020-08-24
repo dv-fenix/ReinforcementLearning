@@ -23,11 +23,29 @@ torch.autograd.set_detect_anomaly(True)
 class ActorCritic(nn.Module):
     def __init__(self, n_inputs: int, n_actions: int,
                         n_features: int=64, discount_factor: float=0.99):
-        """
-        :param n_inputs:    integer representing observation/state size
-        :param n_actions:   integer representing size of action space
-        :param n_features:  hidden_dim of MLP
-        :param learning_rate:   learning rate for the agent
+        """ Advantage Actor Critic Agent
+        Args:
+            :param n_inputs:    integer representing observation/state size
+            :param n_actions:   integer representing size of action space
+            :param n_features:  hidden_dim of MLP
+            :param learning_rate:   learning rate for the agent
+
+        Methods:
+            private:
+                _advantage(Q_value) ---> Float
+                    It computes and returns the advantage score for the episode
+            public:
+                forward(observation) ---> action-value, action-distribution
+                    Forward pass over the computational graph
+                choose_action(aobservation) ---> action-value, action
+                    Samples the action from action distribution
+                save_sequence(value, action, reward) ---> None
+                    Saves the sequence for the current time-step
+                update(optimizer, Q_value) ---> advantage
+                    Executes backpropagation over the Computational Graph
+                    Updates the policy
+                    Resets the Agent for next episode
+
         """
         #Constructor
         super(ActorCritic, self).__init__()
@@ -38,7 +56,7 @@ class ActorCritic(nn.Module):
         self.entropy = 0
         # instantiate critic layers
         self.critic_layer1 = nn.Linear(n_inputs, n_features, bias=False)
-        self.critic_layer2 = nn.Linear(n_features, 1, bias=False)
+        self.critic_layer2 = nn.Linear(n_features, self.num_actions, bias=False) # number of values generated = possible actions
 
         # instantiate actor layers
         self.actor_layer1 = nn.Linear(n_inputs, n_features, bias=False)
@@ -118,6 +136,7 @@ class ActorCritic(nn.Module):
         return advantage
 
     def _advantage(self, Q_value):
+
         Q_values = []
         values = []
         # reversed rewards
@@ -130,6 +149,7 @@ class ActorCritic(nn.Module):
         for element in self.ep_values:
             values.insert(0, element.detach())
         values = torch.FloatTensor(values)
+
         # Advantage = r_(t+1) + gamma* V_(s_t+1) - V_(s_t)
         advantage = q_values - values
 

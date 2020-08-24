@@ -43,7 +43,7 @@ model = ActorCritic(
     n_actions=env.action_space.n,
     n_inputs=env.observation_space.shape[0],
     discount_factor=GAMMA,
-    n_features=32
+    n_features=64
 )
 
 optimizer = optim.Adam(model.parameters(), lr=LR)
@@ -64,7 +64,7 @@ for i_episode in range(3000):
         # load next state
         observation_, reward, done, info = env.step(action)
         # save current state-action sequence
-        model.save_sequence(observation, action, reward, value)
+        model.save_sequence(observation, action, reward, value.max()) # greedy choice
 
         if done:
             ep_return = sum(model.ep_rewards)
@@ -78,7 +78,7 @@ for i_episode in range(3000):
             # state-action value for new observation [V_(t+1)]
             Q_value, _ = model.forward(Variable(obs))
             # do not perform gradient update owing to operations on Q_value
-            Q_value = Q_value.detach().numpy()[0]
+            Q_value = Q_value.detach().numpy().max()  # greedy choice
             # update agent
             advantage = model.update(optimizer, Q_value)
 
